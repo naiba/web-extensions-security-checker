@@ -1,0 +1,23 @@
+{
+    "name": "Web Extensions Security Checker",
+    "description": "Automatically check the security of browser extensions and check the status of extensions in the app store.",
+    "version": "1.0.0",
+    "manifest_version": 3,
+    "permissions": [
+        "alarms",
+        "storage",
+        "management"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_title": "Web Extensions Security Checker",
+        "default_popup": "popup.html"
+    },
+    "icons": {
+        "16": "shield-16.png",
+        "48": "shield-48.png",
+        "128": "shield-128.png"
+    }
+}

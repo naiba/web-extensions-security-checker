@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Web Extensions Security Checker</title>
+    <style>
+        body {
+            width: 18rem;
+            color: white;
+            background-color: black;
+        }
+
+        .title {
+            font-weight: bolder;
+        }
+
+        button {
+            margin: 5px;
+            outline: none;
+            color: white;
+        }
+
+        button:hover {
+            outline: lightgreen dotted thick;
+        }
+
+        .hide {
+            display: none;
+        }
+
+        #noHighRiskExtensionsFound {
+            color: lightgreen;
+        }
+
+        #hasHighRiskExtensions>ul {
+            color: lightgreen;
+            padding-left: 1rem;
+        }
+
+        #hasHighRiskExtensions>ul>li>span {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <p class="title">Web Extensions Security Checker</p>
+    <div id="hasHighRiskExtensions">
+        <p>The following high-risk extensions were detected:</p>
+        <ul id="highRiskExtensions">
+        </ul>
+    </div>
+    <div id="noHighRiskExtensionsFound">
+        <p>Congratulations, no high-risk extensions were detected.</p>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
