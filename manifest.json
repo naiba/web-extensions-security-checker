@@ -1,6 +1,6 @@
 {
     "name": "Web Extensions Security Checker",
-    "description": "Automatically check the security of browser extensions and check the status of extensions in the app store.",
+    "description": "Automatically check the status of extensions in the Chrome Web Store.",
     "version": "1.0.0",
     "manifest_version": 3,
     "permissions": [
