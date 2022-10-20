@@ -1,5 +1,7 @@
 'use strict';
 
+import { setBadgeAndShield } from "./utils.js";
+
 async function checkExtensions() {
     chrome.management.getAll(async extensions => {
         var totalHighRiskExtensions = 0
@@ -14,11 +16,8 @@ async function checkExtensions() {
                 highRiskExtensionsReason[extension.id] = "Removed in webstore"
             }
         }
-        if (totalHighRiskExtensions > 0) {
-            chrome.action.setBadgeText({ text: totalHighRiskExtensions.toString() });
-            chrome.action.setIcon({ path: "shield-danger.png" });
-        }
-        chrome.storage.sync.set({ totalHighRiskExtensions: totalHighRiskExtensions, highRiskExtensionsReason: highRiskExtensionsReason });
+        setBadgeAndShield(totalHighRiskExtensions, false)
+        chrome.storage.sync.set({ totalHighRiskExtensions: totalHighRiskExtensions, highRiskExtensionsReason: highRiskExtensionsReason })
     })
 }
 

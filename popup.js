@@ -1,27 +1,28 @@
 'use strict';
 
+import { setBadgeAndShield } from "./utils.js";
+
 chrome.storage.sync.get(['totalHighRiskExtensions', 'highRiskExtensionsReason'], function (result) {
     if (!result || !result.totalHighRiskExtensions) {
-        document.getElementById('hasHighRiskExtensions').classList.add('hide')
-        document.getElementById('noHighRiskExtensionsFound').classList.remote('hide')
+        setBadgeAndShield(0, true)
         return
     }
-    
+
     chrome.management.getAll(extensions => {
         var highRiskExtensions = ''
+        var highRiskExtensionsCount = ''
         for (let i = 0; i < extensions.length; i++) {
             const extension = extensions[i]
             if (result.highRiskExtensionsReason[extension.id]) {
                 highRiskExtensions += `<li>${extension.name} - <span>${result.highRiskExtensionsReason[extension.id]}</span></li>`
+                highRiskExtensionsCount++
             }
         }
-        if (!highRiskExtensions) {
-            document.getElementById('hasHighRiskExtensions').classList.add('hide')
-            document.getElementById('noHighRiskExtensionsFound').classList.remote('hide')
+        if (!highRiskExtensionsCount) {
+            setBadgeAndShield(0, true)
             return
         }
-        document.getElementById('hasHighRiskExtensions').classList.remove('hide')
-        document.getElementById('noHighRiskExtensionsFound').classList.add('hide')
+        setBadgeAndShield(highRiskExtensionsCount, true)
         document.getElementById('highRiskExtensions').innerHTML = highRiskExtensions
     })
 });
