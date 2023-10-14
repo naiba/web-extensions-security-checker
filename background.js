@@ -8,12 +8,24 @@ async function checkExtensions() {
         var highRiskExtensionsReason = {}
         for (let i = 0; i < extensions.length; i++) {
             const extension = extensions[i]
-            // check if extension is from the webstore
-            const extensionWebstoreUrl = "https://cdnjs.me/cs/" + extension.id
-            const resp = await (await fetch(extensionWebstoreUrl)).json()
-            if (!resp.title) {
-                totalHighRiskExtensions++
-                highRiskExtensionsReason[extension.id] = "Removed in webstore"
+            try {
+                // check if extension is from the webstore
+                const statusCode = await new Promise((resolve, reject) => {
+                    fetch("https://corsproxy.io/?https://chrome.google.com/webstore/detail/" + extension.id, {
+                        redirect: 'manual'
+                    }).then(response => {
+                        resolve(response.type == 'opaqueredirect' ? 301 : response.status)
+                        return {}
+                    }).catch(err => {
+                        reject(err)
+                    })
+                });
+                if (statusCode != 301) {
+                    totalHighRiskExtensions++
+                    highRiskExtensionsReason[extension.id] = "Removed in webstore"
+                }
+            } catch (error) {
+                continue;
             }
         }
         setBadgeAndShield(totalHighRiskExtensions, false)
