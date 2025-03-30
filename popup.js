@@ -3,11 +3,11 @@
 import { setBadgeAndShield } from "./utils.js";
 
 chrome.storage.sync.get(['totalHighRiskExtensions', 'highRiskExtensionsReason'], function (result) {
-    if (!result || !result.totalHighRiskExtensions) {
+    if (!result) return;
+    if (!result.totalHighRiskExtensions) {
         setBadgeAndShield(0, true)
         return
     }
-
     chrome.management.getAll(extensions => {
         var highRiskExtensions = ''
         var highRiskExtensionsCount = ''

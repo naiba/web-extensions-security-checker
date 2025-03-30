@@ -4,30 +4,28 @@ import { setBadgeAndShield } from "./utils.js";
 
 async function getExtensionStatus(extensionId) {
     extensionId += '?&' + Date.now()
-    try {
-        const statusCode = await new Promise((resolve, reject) => {
-            fetch("https://corsproxy.io/?https://chrome.google.com/webstore/detail/" + extensionId, {
-                redirect: 'manual'
-            }).then(response => {
-                resolve(response.type == 'opaqueredirect' ? 301 : response.status)
-                return {}
-            }).catch(err => {
-                reject(err)
-            })
-        });
-        return statusCode
-    } catch (error) {
-    }
-    try {
-        const statusCode = await new Promise((resolve, reject) => {
-            fetch("https://api.allorigins.win/get?url=https://chrome.google.com/webstore/detail/" + extensionId, {
-                redirect: 'manual'
-            }).then(resp => resp.json()).then(data => resolve(data.status.http_code == 200 ? 301 : data.status.http_code)).catch(err => reject(err))
-        });
-        return statusCode
-    } catch (error) {
-        throw error
-    }
+    const extensionUrl = "https://chromewebstore.google.com/detail/" + extensionId
+    const statusCode = await new Promise((resolve, reject) => {
+        fetch("https://playground.httpstatus.io/fetch-status", {
+            headers: {
+                "content-type": "application/json",
+            },
+            "referrer": "https://httpstatus.io/api",
+            "referrerPolicy": "no-referrer-when-downgrade",
+            "body": "{\"requestUrl\":\"" + extensionUrl + "\",\"userAgent\":\"chrome\",\"maxRedirects\":10,\"followRedirect\":false,\"dnsLookupIpVersion\":4,\"validateTlsCertificate\":true,\"https\":false,\"requestHeaders\":false,\"responseHeaders\":false,\"responseBody\":false,\"parsedUrl\":false,\"parsedHostname\":false,\"timings\":false,\"meta\":false}",
+            "method": "POST",
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.response.chain[0].redirectTo.indexOf('empty-title') != -1) {
+                    resolve(404)
+                } else {
+                    resolve(data.response.chain[0].statusCode)
+                }
+            }).catch(err => reject(err))
+    })
+    return statusCode
+
 }
 
 async function checkExtensions() {
@@ -62,7 +60,7 @@ async function checkExtensions() {
 
 chrome.runtime.onInstalled.addListener(async () => {
     checkExtensions()
-    chrome.alarms.create('CheckExtensions', { periodInMinutes: 30 })
+    chrome.alarms.create('CheckExtensions', { periodInMinutes: 60 })
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
