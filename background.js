@@ -2,30 +2,56 @@
 
 import { setBadgeAndShield } from "./utils.js";
 
-async function getExtensionStatus(extensionId) {
-    extensionId += '?&' + Date.now()
-    const extensionUrl = "https://chromewebstore.google.com/detail/" + extensionId
-    const statusCode = await new Promise((resolve, reject) => {
-        fetch("https://playground.httpstatus.io/fetch-status", {
-            headers: {
-                "content-type": "application/json",
-            },
-            "referrer": "https://httpstatus.io/api",
-            "referrerPolicy": "no-referrer-when-downgrade",
-            "body": "{\"requestUrl\":\"" + extensionUrl + "\",\"userAgent\":\"chrome\",\"maxRedirects\":10,\"followRedirect\":false,\"dnsLookupIpVersion\":4,\"validateTlsCertificate\":true,\"https\":false,\"requestHeaders\":false,\"responseHeaders\":false,\"responseBody\":false,\"parsedUrl\":false,\"parsedHostname\":false,\"timings\":false,\"meta\":false}",
-            "method": "POST",
-        })
-            .then(resp => resp.json())
-            .then(data => {
-                if (data.response.chain[0].redirectTo.indexOf('empty-title') != -1) {
-                    resolve(404)
-                } else {
-                    resolve(data.response.chain[0].statusCode)
-                }
-            }).catch(err => reject(err))
-    })
-    return statusCode
+const extensionUrlRegex = (extensionId) => new RegExp(`https:\/\/chromewebstore\\.google\\.com\/detail\/([^\\/]*)\/${extensionId}`);
 
+async function getStatusFromResponseText(proxy, extensionId, urlEncode, customOptions) {
+    const extensionUrl = "https://chromewebstore.google.com/detail/" + extensionId + '?&' + Date.now()
+    const resp = await fetch(`${proxy}${urlEncode ? encodeURIComponent(extensionUrl) : extensionUrl}`, customOptions)
+    const respText = await resp.text()
+    const match = respText.match(extensionUrlRegex(extensionId))
+    console.log(new URL(proxy).hostname, match);
+    return match[1] != 'empty-title'
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+async function getExtensionStatus(extensionId) {
+    const proxies = shuffleArray([
+        "https://api.codetabs.com/v1/proxy/?quest=",
+        "https://universal-cors-proxy.glitch.me/",
+        "https://api.allorigins.win/get?url=",
+        "https://corsproxy.io/?",
+    ])
+    const disableUrlEncode = {
+        "https://thingproxy.freeboard.io/fetch/": true,
+    }
+    const customOptions = {
+        "https://thingproxy.freeboard.io/fetch/": {
+            headers: {
+            }
+        }
+    }
+    return await new Promise(async (resolve, reject) => {
+        for (let i = 0; i < proxies.length; i++) {
+            const proxy = proxies[i];
+            try {
+                resolve(await getStatusFromResponseText(proxy,
+                    extensionId,
+                    !disableUrlEncode[proxy],
+                    customOptions[proxy]))
+                break
+            } catch (error) {
+                console.error(`Error fetching from ${proxy}: ${error}`);
+            }
+        }
+        reject("Fetch failed")
+    })
 }
 
 async function checkExtensions() {
@@ -34,13 +60,15 @@ async function checkExtensions() {
         var highRiskExtensionsReason = {}
         for (let i = 0; i < extensions.length; i++) {
             const extension = extensions[i]
+            // 跳过非 Chrome Web Store 的扩展或自身的扩展
+            if (!extension.updateUrl || !extension.updateUrl.includes('google.com')) {
+                console.log(`Skipping check for non-CWS extension: ${extension.name} (${extension.id})`);
+                continue;
+            }
             try {
                 // check if extension is from the webstore
-                const statusCode = await getExtensionStatus(extension.id)
-                if (statusCode != 301 && statusCode != 404) {
-                    throw "Unexpected status code: " + statusCode
-                }
-                if (statusCode != 301) {
+                const ret = await getExtensionStatus(extension.id)
+                if (!ret) {
                     totalHighRiskExtensions++
                     highRiskExtensionsReason[extension.id] = "Removed in webstore"
                 }
@@ -63,9 +91,18 @@ chrome.runtime.onInstalled.addListener(async () => {
     chrome.alarms.create('CheckExtensions', { periodInMinutes: 60 })
 });
 
-chrome.alarms.onAlarm.addListener((alarm) => {
-    switch (alarm.name) {
-        case 'CheckExtensions':
-            return checkExtensions()
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+    if (alarm.name == 'CheckExtensions') {
+        await checkExtensions();
     }
+});
+
+chrome.runtime.onStartup.addListener(async () => {
+    checkExtensions();
+    chrome.alarms.get('CheckExtensions', (alarm) => {
+        if (!alarm) {
+            console.log('Alarm "CheckExtensions" not found on startup, recreating.');
+            chrome.alarms.create('CheckExtensions', { periodInMinutes: 60 });
+        }
+    });
 });

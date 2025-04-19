@@ -5,23 +5,56 @@
     <title>Web Extensions Security Checker</title>
     <style>
         body {
-            width: 18rem;
-            color: white;
-            background-color: black;
+            width: 17rem; /* Further reduce width */
+            padding: 0.1rem 1rem 0.5rem 1rem; /* Further reduce top padding */
+            font-family: sans-serif;
+            background-color: #000000;
+            color: #e9ecef;
         }
 
         .title {
-            font-weight: bolder;
+            font-weight: bold;
+            font-size: 0.9rem; /* Reduce font size further */
+            color: #ffffff;
+            display: inline-block;
+            padding: 0.4rem 0.75rem 0.5rem 0.75rem; /* Adjusted bottom padding slightly */
+            border-radius: 0.25rem;
+            margin-left: auto;
+            margin-right: auto;
+            display: block; /* Make it a block to center */
+            text-align: center; /* Center text within the block */
+            width: fit-content; /* Ensure block width fits content */
+            margin-bottom: 0.75rem; /* Adjust margin below title */
+            position: relative;
+            z-index: 1; /* Ensure text is on top */
+            background-color: transparent;
         }
 
-        button {
-            margin: 5px;
-            outline: none;
-            color: white;
+        /* Text background (similar to before but maybe adjusted) */
+        .title::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #343a40; /* Background for the text area */
+            border-radius: 0.25rem;
+            z-index: -2; /* Furthest back */
         }
 
-        button:hover {
-            outline: lightgreen dotted thick;
+        /* Add the colored bar below the text */
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: 0.2rem; /* Adjust vertical position */
+            left: 50%; /* Start at the center */
+            transform: translateX(-50%); /* Center the bar */
+            width: 90%; /* Adjust width */
+            height: 4px; /* Adjust height */
+            background-color: #20c997; /* Fresh green/teal color */
+            border-radius: 2px; /* Optional: rounded corners for the bar */
+            z-index: -1; /* Behind text, above ::before background */
         }
 
         .hide {
@@ -29,29 +62,65 @@
         }
 
         #noHighRiskExtensionsFound {
-            color: lightgreen;
+            color: #20c997;
+            font-weight: bold;
+            margin-top: 1rem;
         }
 
-        #hasHighRiskExtensions>ul {
-            color: lightgreen;
-            padding-left: 1rem;
+        #hasHighRiskExtensions p {
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: #f8f9fa;
+            margin-top: 1rem;
         }
 
-        #hasHighRiskExtensions>ul>li>span {
-            color: red;
+        #hasHighRiskExtensions ul {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 0;
+        }
+
+        #hasHighRiskExtensions ul li {
+            background-color: #212529;
+            border: 1px solid #495057;
+            border-radius: 0.25rem;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 0.5rem;
+            color: #ced4da;
+            font-weight: 500;
+        }
+
+        #hasHighRiskExtensions ul li span {
+            color: #ff6b6b;
+            font-weight: normal;
+            display: block;
+            font-size: 0.9em;
+            margin-top: 0.25rem;
+        }
+
+        #loadingMessage {
+            text-align: center;
+            padding: 1rem;
+            color: #adb5bd;
+            margin-top: 1rem;
         }
     </style>
 </head>
 
 <body>
+    <!-- Title is now styled with background -->
     <p class="title">Web Extensions Security Checker</p>
-    <div id="hasHighRiskExtensions">
-        <p>The following high-risk extensions were detected:</p>
+
+    <div id="loadingMessage">
+        <p>Loading...</p>
+    </div>
+    <div id="hasHighRiskExtensions" class="hide">
+        <p>High-risk extensions detected:</p>
         <ul id="highRiskExtensions">
         </ul>
     </div>
-    <div id="noHighRiskExtensionsFound">
-        <p>Congratulations, no high-risk extensions were detected.</p>
+    <div id="noHighRiskExtensionsFound" class="hide">
+        <p>✅ Congratulations, no high-risk extensions were detected.</p>
     </div>
     <script type="module" src="popup.js"></script>
 </body>
