@@ -1,43 +1,96 @@
 'use strict';
 
-import { setBadgeAndShield } from "./utils.js";
-
 const loadingMessage = document.getElementById('loadingMessage');
+const loadingText = document.getElementById('loadingText');
 const hasHighRiskDiv = document.getElementById('hasHighRiskExtensions');
 const noHighRiskDiv = document.getElementById('noHighRiskExtensionsFound');
 const highRiskList = document.getElementById('highRiskExtensions');
 
-chrome.storage.sync.get(['totalHighRiskExtensions', 'highRiskExtensionsReason'], function (result) {
-    if (!result) return;
+const RISK_LABELS = { high: 'High', medium: 'Medium', low: 'Low' };
+const STORAGE_KEYS = ['checkStatus', 'checked', 'total', 'highRiskExtensionsReason', 'lastCheckTime', 'dismissedAlerts'];
 
-    if (!result || !result.highRiskExtensionsReason) { // Check only for reason existence initially
-        setBadgeAndShield(0, true, loadingMessage, hasHighRiskDiv, noHighRiskDiv); // Show no high risk initially or if error
-        return;
+let extensionNameMap = null;
+
+async function getNameMap() {
+    if (extensionNameMap) return extensionNameMap;
+    const extensions = await chrome.management.getAll();
+    extensionNameMap = {};
+    for (const ext of extensions) {
+        extensionNameMap[ext.id] = ext.name;
+    }
+    return extensionNameMap;
+}
+
+function renderCard(id, name, entry) {
+    const { reasons, riskLevel } = entry;
+    const reasonItems = reasons.map(r => `<li>${r}</li>`).join('');
+    return `<li class="risk-${riskLevel}">
+        <div class="card-header">
+            <span class="card-name">${name}</span>
+            <span class="risk-badge badge-${riskLevel}">${RISK_LABELS[riskLevel]}</span>
+            <button class="dismiss-btn" data-id="${id}" title="Dismiss">✕</button>
+        </div>
+        <ul class="reason-list">${reasonItems}</ul>
+    </li>`;
+}
+
+async function render(data) {
+    const { checkStatus, checked, total, highRiskExtensionsReason, lastCheckTime, dismissedAlerts } = data;
+    const allReasons = highRiskExtensionsReason || {};
+    const dismissed = dismissedAlerts || {};
+    const isChecking = checkStatus === 'checking';
+
+    const nameMap = await getNameMap();
+    const visibleIds = Object.keys(allReasons).filter(id =>
+        dismissed[id] !== allReasons[id].fingerprint && nameMap[id]
+    );
+
+    if (isChecking) {
+        loadingText.textContent = `Checking extensions… ${checked || 0}/${total || 0}`;
+        loadingMessage.classList.remove('hide');
     }
 
-    chrome.management.getAll(extensions => {
-        let highRiskExtensionsHTML = '';
-        let highRiskExtensionsCount = 0;
-        const knownReasons = result.highRiskExtensionsReason || {}; // Ensure knownReasons is an object
-
-        for (let i = 0; i < extensions.length; i++) {
-            const extension = extensions[i];
-            // Only count enabled extensions that have a reason
-            if (extension.enabled && knownReasons[extension.id]) {
-                highRiskExtensionsHTML += `<li>${extension.name} <span>${knownReasons[extension.id]}</span></li>`;
-                highRiskExtensionsCount++;
-            }
+    if (visibleIds.length) {
+        const riskOrder = { high: 0, medium: 1, low: 2 };
+        visibleIds.sort((a, b) => (riskOrder[allReasons[a].riskLevel] || 2) - (riskOrder[allReasons[b].riskLevel] || 2));
+        let html = '';
+        for (const id of visibleIds) {
+            html += renderCard(id, nameMap[id] || id, allReasons[id]);
         }
+        highRiskList.innerHTML = html;
+        hasHighRiskDiv.classList.remove('hide');
+        noHighRiskDiv.classList.add('hide');
+        if (!isChecking) loadingMessage.classList.add('hide');
+    } else if (!isChecking && (lastCheckTime || checkStatus === 'done')) {
+        loadingMessage.classList.add('hide');
+        hasHighRiskDiv.classList.add('hide');
+        noHighRiskDiv.classList.remove('hide');
+    }
+}
 
-        // Update storage with the actual count of *enabled* high-risk extensions found
-        // This ensures the badge count matches the list shown in the popup
-        chrome.storage.sync.set({ totalHighRiskExtensions: highRiskExtensionsCount }, () => {
-            if (!highRiskExtensionsCount) {
-                setBadgeAndShield(0, true, loadingMessage, hasHighRiskDiv, noHighRiskDiv);
-            } else {
-                highRiskList.innerHTML = highRiskExtensionsHTML;
-                setBadgeAndShield(highRiskExtensionsCount, true, loadingMessage, hasHighRiskDiv, noHighRiskDiv);
-            }
-        });
-    });
+highRiskList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.dismiss-btn');
+    if (!btn) return;
+    const extId = btn.dataset.id;
+    const { highRiskExtensionsReason, dismissedAlerts } = await chrome.storage.local.get(['highRiskExtensionsReason', 'dismissedAlerts']);
+    const dismissed = dismissedAlerts || {};
+    const entry = (highRiskExtensionsReason || {})[extId];
+    if (entry) {
+        dismissed[extId] = entry.fingerprint;
+        await chrome.storage.local.set({ dismissedAlerts: dismissed });
+
+        const reasons = highRiskExtensionsReason || {};
+        const count = Object.entries(reasons)
+            .filter(([id, v]) => (v.riskLevel === 'high' || v.riskLevel === 'medium') && dismissed[id] !== v.fingerprint)
+            .length;
+        chrome.action.setBadgeText({ text: count ? count.toString() : '' });
+        chrome.action.setIcon({ path: count ? 'shield-danger.png' : 'shield-128.png' });
+    }
+});
+
+chrome.storage.local.get(STORAGE_KEYS, render);
+
+chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local') return;
+    chrome.storage.local.get(STORAGE_KEYS, render);
 });

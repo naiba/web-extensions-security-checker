@@ -1,126 +1,525 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
     <title>Web Extensions Security Checker</title>
     <style>
-        body {
-            width: 17rem; /* Further reduce width */
-            padding: 0.1rem 1rem 0.5rem 1rem; /* Further reduce top padding */
-            font-family: sans-serif;
-            background-color: #000000;
-            color: #e9ecef;
+        /* ═══════════════════════════════════════════
+           DESIGN SYSTEM — CSS Custom Properties
+           ═══════════════════════════════════════════ */
+
+        :root {
+            /* — Typography — */
+            --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            --font-body: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+            /* — Spacing — */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 0.75rem;
+            --space-lg: 1rem;
+            --space-xl: 1.25rem;
+
+            /* — Radius — */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+
+            /* — Transitions — */
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-fast: 150ms;
+            --duration-normal: 250ms;
         }
+
+        /* ═══════════════════════════════════════════
+           LIGHT THEME (default)
+           ═══════════════════════════════════════════ */
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg-primary: #f8f9fb;
+                --bg-secondary: #ffffff;
+                --bg-card: #ffffff;
+                --bg-card-hover: #f3f4f6;
+                --bg-header: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+                --bg-loading-pulse: rgba(100, 116, 139, 0.08);
+
+                --border-subtle: rgba(0, 0, 0, 0.06);
+                --border-card: rgba(0, 0, 0, 0.08);
+
+                --text-primary: #0f172a;
+                --text-secondary: #475569;
+                --text-tertiary: #94a3b8;
+                --text-header: #ffffff;
+                --text-header-sub: rgba(255, 255, 255, 0.7);
+
+                --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+                --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
+
+                --accent-safe: #10b981;
+                --accent-safe-bg: rgba(16, 185, 129, 0.08);
+                --accent-safe-border: rgba(16, 185, 129, 0.2);
+
+                --accent-danger: #ef4444;
+                --accent-warn: #f59e0b;
+                --accent-info: #6b7280;
+                --accent-danger-bg: rgba(239, 68, 68, 0.06);
+                --accent-danger-border: rgba(239, 68, 68, 0.15);
+                --accent-danger-text: #dc2626;
+                --accent-warn-bg: rgba(245, 158, 11, 0.06);
+                --accent-warn-border: rgba(245, 158, 11, 0.15);
+                --accent-warn-text: #d97706;
+                --accent-info-bg: rgba(107, 114, 128, 0.06);
+                --accent-info-border: rgba(107, 114, 128, 0.15);
+                --accent-info-text: #4b5563;
+
+                --dot-color: rgba(0, 0, 0, 0.07);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           DARK THEME
+           ═══════════════════════════════════════════ */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #0c0e14;
+                --bg-secondary: #12141c;
+                --bg-card: #181a24;
+                --bg-card-hover: #1e2130;
+                --bg-header: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                --bg-loading-pulse: rgba(148, 163, 184, 0.06);
+
+                --border-subtle: rgba(255, 255, 255, 0.06);
+                --border-card: rgba(255, 255, 255, 0.08);
+
+                --text-primary: #e2e8f0;
+                --text-secondary: #94a3b8;
+                --text-tertiary: #64748b;
+                --text-header: #ffffff;
+                --text-header-sub: rgba(255, 255, 255, 0.8);
+
+                --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+                --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3);
+
+                --accent-safe: #34d399;
+                --accent-safe-bg: rgba(52, 211, 153, 0.1);
+                --accent-safe-border: rgba(52, 211, 153, 0.2);
+
+                --accent-danger: #f87171;
+                --accent-warn: #fbbf24;
+                --accent-info: #9ca3af;
+                --accent-danger-bg: rgba(248, 113, 113, 0.08);
+                --accent-danger-border: rgba(248, 113, 113, 0.18);
+                --accent-danger-text: #fca5a5;
+                --accent-warn-bg: rgba(251, 191, 36, 0.08);
+                --accent-warn-border: rgba(251, 191, 36, 0.18);
+                --accent-warn-text: #fcd34d;
+                --accent-info-bg: rgba(156, 163, 175, 0.08);
+                --accent-info-border: rgba(156, 163, 175, 0.18);
+                --accent-info-text: #d1d5db;
+
+                --dot-color: rgba(255, 255, 255, 0.03);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           ANIMATIONS
+           ═══════════════════════════════════════════ */
+
+        @keyframes pulse-gentle {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* ═══════════════════════════════════════════
+           BASE
+           ═══════════════════════════════════════════ */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 320px;
+            font-family: var(--font-body);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+        }
+
+        /* subtle dot pattern overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+            background-size: 16px 16px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ═══════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════ */
 
         .title {
-            font-weight: bold;
-            font-size: 0.9rem; /* Reduce font size further */
-            color: #ffffff;
-            display: inline-block;
-            padding: 0.4rem 0.75rem 0.5rem 0.75rem; /* Adjusted bottom padding slightly */
-            border-radius: 0.25rem;
-            margin-left: auto;
-            margin-right: auto;
-            display: block; /* Make it a block to center */
-            text-align: center; /* Center text within the block */
-            width: fit-content; /* Ensure block width fits content */
-            margin-bottom: 0.75rem; /* Adjust margin below title */
             position: relative;
-            z-index: 1; /* Ensure text is on top */
-            background-color: transparent;
+            z-index: 1;
+            background: var(--bg-header);
+            margin: 0;
+            padding: var(--space-lg) var(--space-xl);
+            font-family: var(--font-display);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-header);
+            letter-spacing: -0.01em;
+            line-height: 1.3;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
         }
 
-        /* Text background (similar to before but maybe adjusted) */
+        /* CSS shield icon */
         .title::before {
             content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #343a40; /* Background for the text area */
-            border-radius: 0.25rem;
-            z-index: -2; /* Furthest back */
+            flex-shrink: 0;
+            width: 22px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 3px 3px 10px 10px;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 65%, 50% 100%, 0% 65%);
         }
 
-        /* Add the colored bar below the text */
         .title::after {
-            content: '';
-            position: absolute;
-            bottom: 0.2rem; /* Adjust vertical position */
-            left: 50%; /* Start at the center */
-            transform: translateX(-50%); /* Center the bar */
-            width: 90%; /* Adjust width */
-            height: 4px; /* Adjust height */
-            background-color: #20c997; /* Fresh green/teal color */
-            border-radius: 2px; /* Optional: rounded corners for the bar */
-            z-index: -1; /* Behind text, above ::before background */
+            content: 'WESC';
+            margin-left: auto;
+            font-size: 0.625rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: rgba(255, 255, 255, 0.4);
+            text-transform: uppercase;
         }
+
+        /* ═══════════════════════════════════════════
+           CONTENT AREA
+           ═══════════════════════════════════════════ */
+
+        .content {
+            position: relative;
+            z-index: 1;
+            padding: var(--space-lg) var(--space-xl) var(--space-xl);
+        }
+
+        /* ═══════════════════════════════════════════
+           UTILITY
+           ═══════════════════════════════════════════ */
 
         .hide {
             display: none;
         }
 
-        #noHighRiskExtensionsFound {
-            color: #20c997;
-            font-weight: bold;
-            margin-top: 1rem;
-        }
-
-        #hasHighRiskExtensions p {
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-            color: #f8f9fa;
-            margin-top: 1rem;
-        }
-
-        #hasHighRiskExtensions ul {
-            list-style: none;
-            padding-left: 0;
-            margin-top: 0;
-        }
-
-        #hasHighRiskExtensions ul li {
-            background-color: #212529;
-            border: 1px solid #495057;
-            border-radius: 0.25rem;
-            padding: 0.5rem 0.75rem;
-            margin-bottom: 0.5rem;
-            color: #ced4da;
-            font-weight: 500;
-        }
-
-        #hasHighRiskExtensions ul li span {
-            color: #ff6b6b;
-            font-weight: normal;
-            display: block;
-            font-size: 0.9em;
-            margin-top: 0.25rem;
-        }
+        /* ═══════════════════════════════════════════
+           LOADING STATE
+           ═══════════════════════════════════════════ */
 
         #loadingMessage {
             text-align: center;
-            padding: 1rem;
-            color: #adb5bd;
-            margin-top: 1rem;
+            padding: var(--space-xl) var(--space-lg);
+            animation: fade-in-up 0.3s var(--ease-out) both;
+        }
+
+        #loadingMessage p {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            color: var(--text-tertiary);
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        /* CSS spinner ring */
+        #loadingMessage p::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-subtle);
+            border-top-color: var(--text-tertiary);
+            border-radius: 50%;
+            animation: rotate 0.7s linear infinite;
+        }
+
+        /* shimmer bar below loading text */
+        #loadingMessage::after {
+            content: '';
+            display: block;
+            margin: var(--space-lg) auto 0;
+            width: 60%;
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(
+                90deg,
+                var(--bg-loading-pulse) 0%,
+                var(--text-tertiary) 50%,
+                var(--bg-loading-pulse) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.8s ease-in-out infinite;
+            opacity: 0.3;
+        }
+
+        /* ═══════════════════════════════════════════
+           SUCCESS STATE — No Risk
+           ═══════════════════════════════════════════ */
+
+        #noHighRiskExtensionsFound {
+            animation: fade-in-up 0.35s var(--ease-out) both;
+        }
+
+        #noHighRiskExtensionsFound p {
+            background: var(--accent-safe-bg);
+            border: 1px solid var(--accent-safe-border);
+            border-radius: var(--radius-md);
+            padding: var(--space-lg);
+            color: var(--accent-safe);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        /* ═══════════════════════════════════════════
+           DANGER STATE — High Risk
+           ═══════════════════════════════════════════ */
+
+        #hasHighRiskExtensions {
+            animation: fade-in-up 0.35s var(--ease-out) both;
+        }
+
+        #hasHighRiskExtensions > p {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-danger);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        /* warning dot */
+        #hasHighRiskExtensions > p::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            background: var(--accent-danger);
+            border-radius: 50%;
+            flex-shrink: 0;
+            animation: pulse-gentle 2s ease-in-out infinite;
+        }
+
+        /* ═══════════════════════════════════════════
+           EXTENSION CARDS
+           ═══════════════════════════════════════════ */
+
+        #hasHighRiskExtensions ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-sm);
+        }
+
+        #hasHighRiskExtensions ul li {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: var(--radius-sm);
+            padding: var(--space-md) var(--space-md);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.4;
+            box-shadow: var(--shadow-card);
+            transition:
+                background-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-normal) var(--ease-out),
+                transform var(--duration-normal) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out);
+            animation: fade-in-up 0.35s var(--ease-out) both;
+            border-left: 3px solid var(--accent-danger);
+            position: relative;
+        }
+
+        #hasHighRiskExtensions ul li.risk-high { border-left-color: var(--accent-danger); }
+        #hasHighRiskExtensions ul li.risk-medium { border-left-color: var(--accent-warn); }
+        #hasHighRiskExtensions ul li.risk-low { border-left-color: var(--accent-info); }
+
+        #hasHighRiskExtensions ul li:nth-child(1) { animation-delay: 0.05s; }
+        #hasHighRiskExtensions ul li:nth-child(2) { animation-delay: 0.1s; }
+        #hasHighRiskExtensions ul li:nth-child(3) { animation-delay: 0.15s; }
+        #hasHighRiskExtensions ul li:nth-child(4) { animation-delay: 0.2s; }
+        #hasHighRiskExtensions ul li:nth-child(5) { animation-delay: 0.25s; }
+
+        #hasHighRiskExtensions ul li:hover {
+            background: var(--bg-card-hover);
+            box-shadow: var(--shadow-card-hover);
+            transform: translateY(-1px);
+        }
+        #hasHighRiskExtensions ul li.risk-high:hover { border-color: var(--accent-danger-border); border-left-color: var(--accent-danger); }
+        #hasHighRiskExtensions ul li.risk-medium:hover { border-color: var(--accent-warn-border); border-left-color: var(--accent-warn); }
+        #hasHighRiskExtensions ul li.risk-low:hover { border-color: var(--accent-info-border); border-left-color: var(--accent-info); }
+
+        /* Card header: name + badge + dismiss */
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .card-name {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dismiss-btn {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--border-card);
+            border-radius: 4px;
+            background: transparent;
+            color: var(--text-tertiary);
+            font-size: 0.625rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all var(--duration-fast) var(--ease-out);
+        }
+
+        .dismiss-btn:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-secondary);
+            border-color: var(--border-subtle);
+        }
+
+        /* Risk level badge */
+        .risk-badge {
+            display: inline-block;
+            font-size: 0.5625rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 1px 6px;
+            border-radius: 3px;
+            line-height: 1.6;
+            flex-shrink: 0;
+        }
+
+        .risk-badge.badge-high {
+            background: var(--accent-danger-bg);
+            color: var(--accent-danger-text);
+            border: 1px solid var(--accent-danger-border);
+        }
+
+        .risk-badge.badge-medium {
+            background: var(--accent-warn-bg);
+            color: var(--accent-warn-text);
+            border: 1px solid var(--accent-warn-border);
+        }
+
+        .risk-badge.badge-low {
+            background: var(--accent-info-bg);
+            color: var(--accent-info-text);
+            border: 1px solid var(--accent-info-border);
+        }
+
+        /* Reason list */
+        .reason-list {
+            list-style: none;
+            padding: 0;
+            margin: var(--space-xs) 0 0 0;
+        }
+
+        .reason-list li {
+            font-size: 0.6875rem;
+            font-weight: 400;
+            line-height: 1.5;
+            opacity: 0.85;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            background: none;
+            border-left: none !important;
+            animation: none;
+        }
+
+        .risk-high .reason-list li { color: var(--accent-danger-text); }
+        .risk-medium .reason-list li { color: var(--accent-warn-text); }
+        .risk-low .reason-list li { color: var(--accent-info-text); }
+
+        .reason-list li::before {
+            content: '·';
+            margin-right: 4px;
+            font-weight: 700;
+        }
+
+        .reason-list li:hover {
+            background: none;
+            box-shadow: none;
+            transform: none;
         }
     </style>
 </head>
 
 <body>
-    <!-- Title is now styled with background -->
     <p class="title">Web Extensions Security Checker</p>
 
-    <div id="loadingMessage">
-        <p>Loading...</p>
-    </div>
-    <div id="hasHighRiskExtensions" class="hide">
-        <p>High-risk extensions detected:</p>
-        <ul id="highRiskExtensions">
-        </ul>
-    </div>
-    <div id="noHighRiskExtensionsFound" class="hide">
-        <p>✅ Congratulations, no high-risk extensions were detected.</p>
+    <div class="content">
+        <div id="loadingMessage">
+            <p id="loadingText">Checking extensions…</p>
+        </div>
+        <div id="hasHighRiskExtensions" class="hide">
+            <p>Risk detected in extensions:</p>
+            <ul id="highRiskExtensions">
+            </ul>
+        </div>
+        <div id="noHighRiskExtensionsFound" class="hide">
+            <p>✅ Congratulations, no high-risk extensions were detected.</p>
+        </div>
     </div>
     <script type="module" src="popup.js"></script>
 </body>
