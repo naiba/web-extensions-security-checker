@@ -115,10 +115,9 @@ async function checkExtensions() {
                 reasons.push('Removed from Chrome Web Store');
                 riskLevel = maxRiskLevel(riskLevel || 'low', 'high');
             }
+        // 网络请求失败不归类为扩展有风险，仅记录日志并跳过
         } catch (error) {
-            const msg = (typeof error == "object" && 'message' in error) ? error.message : error
-            reasons.push('Error checking webstore: ' + msg);
-            riskLevel = maxRiskLevel(riskLevel || 'low', 'high');
+            console.warn('Network error checking extension', extension.id, error);
         }
 
         const permCheck = checkPermissionRisk(extension);
@@ -181,4 +180,12 @@ chrome.runtime.onStartup.addListener(async () => {
             chrome.alarms.create('CheckExtensions', { periodInMinutes: 60 });
         }
     });
+});
+
+// popup 打开时触发重新检查扩展风险
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message.action === 'checkExtensions') {
+        checkExtensions().then(() => sendResponse({ done: true }));
+        return true;
+    }
 });

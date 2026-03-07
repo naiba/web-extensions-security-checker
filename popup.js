@@ -90,6 +90,9 @@ highRiskList.addEventListener('click', async (e) => {
 
 chrome.storage.local.get(STORAGE_KEYS, render);
 
+// popup 打开时触发 background 重新检查扩展风险
+chrome.runtime.sendMessage({ action: 'checkExtensions' });
+
 chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
     chrome.storage.local.get(STORAGE_KEYS, render);
